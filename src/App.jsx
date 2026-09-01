@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 
 /* =========================================================================
-   DESIGN TOKENS & STYLES
+   DESIGN TOKENS & DUAL-THEME PALETTES
    ========================================================================= */
 const LIGHT_VARS = {
   '--bg': '#F5F8F6',
@@ -22,6 +22,8 @@ const LIGHT_VARS = {
   '--warning-soft': '#FBEBCF',
   '--success': '#237A55',
   '--success-soft': '#DDF0E4',
+  '--danger': '#C24B4B',
+  '--danger-soft': '#FDE8E8',
   '--shadow': '0 12px 30px -14px rgba(15, 44, 40, 0.25)',
 };
 
@@ -44,6 +46,8 @@ const DARK_VARS = {
   '--warning-soft': '#2E2716',
   '--success': '#4BC98D',
   '--success-soft': '#153627',
+  '--danger': '#F87171',
+  '--danger-soft': '#3A1E1E',
   '--shadow': '0 16px 34px -14px rgba(0, 0, 0, 0.55)',
 };
 
@@ -123,16 +127,17 @@ const GLOBAL_STYLES = `
   font-size: .95rem; display: inline-flex; align-items: center; gap: .5rem;
 }
 .dc-btn-primary { background: var(--primary); color: var(--on-primary); box-shadow: var(--shadow); }
-.dc-btn-primary:hover { background: var(--primary-strong); transform: translateY(-1px); }
+.dc-btn-primary:hover:not(:disabled) { background: var(--primary-strong); transform: translateY(-1px); }
 .dc-btn-accent { background: var(--accent); color: var(--on-accent); box-shadow: var(--shadow); }
-.dc-btn-accent:hover { background: var(--accent-strong); transform: translateY(-1px); }
+.dc-btn-accent:hover:not(:disabled) { background: var(--accent-strong); transform: translateY(-1px); }
 .dc-btn-ghost { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
 .dc-btn-ghost:hover { background: var(--surface-strong); }
 .dc-btn-outline-danger {
-  background: transparent; border: 1px solid #C24B4B; color: #C24B4B;
-  border-radius: 999px; padding: .4rem 1rem; font-weight: 600; font-size: .85rem; cursor: pointer;
+  background: transparent; border: 1px solid var(--danger); color: var(--danger);
+  border-radius: 999px; padding: .35rem .85rem; font-weight: 600; font-size: .82rem; cursor: pointer;
+  transition: all .2s ease;
 }
-.dc-btn-outline-danger:hover { background: #C24B4B; color: #fff; }
+.dc-btn-outline-danger:hover { background: var(--danger); color: #fff; }
 .dc-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
 
 .dc-card {
@@ -167,59 +172,29 @@ const GLOBAL_STYLES = `
 .dc-table thead th {
   color: var(--text-muted); font-size: .78rem; text-transform: uppercase;
   letter-spacing: .06em; font-weight: 700; border-bottom: 1px solid var(--border);
-  padding: .6rem .75rem; text-align: left;
+  padding: .75rem 1rem; text-align: left;
 }
 .dc-table tbody td {
-  padding: .85rem .75rem; border-bottom: 1px solid var(--border); vertical-align: middle;
+  padding: .95rem 1rem; border-bottom: 1px solid var(--border); vertical-align: middle;
 }
 .dc-table tbody tr:last-child td { border-bottom: none; }
 .dc-table tbody tr:hover { background: var(--surface); }
 
 .dc-badge {
-  display: inline-block; padding: .25rem .65rem; border-radius: 999px;
+  display: inline-block; padding: .25rem .7rem; border-radius: 999px;
   font-size: .78rem; font-weight: 700;
 }
-
-.dc-slot {
-  border: 1px solid var(--border); border-radius: 12px; padding: .5rem .4rem;
-  text-align: center; font-size: .85rem; cursor: pointer; background: var(--bg-elevated);
-  transition: all .15s ease;
-}
-.dc-slot:hover:not(.is-taken) { border-color: var(--primary); }
-.dc-slot.is-selected { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
-.dc-slot.is-taken { background: var(--surface); color: var(--text-muted); text-decoration: line-through; cursor: not-allowed; opacity: .6; }
-
-.dc-dentist-card { cursor: pointer; transition: all .18s ease; border: 2px solid transparent; }
-.dc-dentist-card:hover { transform: translateY(-2px); }
-.dc-dentist-card.is-selected { border-color: var(--primary); background: var(--surface); }
-
-.dc-stat-number { font-size: 2rem; font-weight: 700; color: var(--primary); }
 .dc-footer { background: var(--surface); border-top: 1px solid var(--border); }
-
-@media (max-width: 767px) {
-  .dc-nav-links { display: none !important; }
-  .dc-nav-links.is-open { display: flex !important; flex-direction: column; align-items: stretch; }
-}
 `;
 
-const GumlineDivider = ({ flip }) => (
-  <svg
-    viewBox="0 0 400 24"
-    preserveAspectRatio="none"
-    style={{ width: '100%', height: '22px', display: 'block', transform: flip ? 'rotate(180deg)' : 'none' }}
-  >
-    <path
-      d="M0,0 Q12.5,24 25,0 Q37.5,24 50,0 Q62.5,24 75,0 Q87.5,24 100,0 Q112.5,24 125,0 Q137.5,24 150,0 Q162.5,24 175,0 Q187.5,24 200,0 Q212.5,24 225,0 Q237.5,24 250,0 Q262.5,24 275,0 Q287.5,24 300,0 Q312.5,24 325,0 Q337.5,24 350,0 Q362.5,24 375,0 Q387.5,24 400,0 L400,24 L0,24 Z"
-      fill="var(--surface)"
-    />
-  </svg>
-);
+const API_URL = 'http://localhost:4000/api';
 
 const App = () => {
   const [theme, setTheme] = useState('light');
   const themeVars = theme === 'dark' ? DARK_VARS : LIGHT_VARS;
+  const [page, setPage] = useState('home'); // 'home' | 'booking' | 'supplies' | 'dashboard' | 'auth'
 
-  /* User Auth State */
+  /* Auth State */
   const [currentUser, setCurrentUser] = useState(null);
   const [authRole, setAuthRole] = useState('customer'); // 'customer' | 'staff'
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
@@ -229,49 +204,44 @@ const App = () => {
   const [authError, setAuthError] = useState('');
   const [authSuccess, setAuthSuccess] = useState('');
 
-  /* Navigation */
-  const [page, setPage] = useState('home');
-  const [navOpen, setNavOpen] = useState(false);
-  const goTo = (p) => { 
-    setPage(p); 
-    setNavOpen(false); 
-    setAuthError('');
-    setAuthSuccess('');
-    window.scrollTo({ top: 0, behavior: 'smooth' }); 
-  };
-
-  /* Mock Data */
-  const initialProducts = [
-    { id: 1, name: "ยาชาเฉพาะที่ (Lidocaine)", price: 450, stock: 25 },
-    { id: 2, name: "ไหมขัดฟันทางการแพทย์ (Dental Floss)", price: 85, stock: 5 },
-    { id: 3, name: "ชุดกระจกส่องปากและสำลี (Dental Kit)", price: 120, stock: 18 }
+  /* Treatments */
+  const categories = [
+    { id: 1, name: "ศัลยศาสตร์ช่องปาก", description: "ถอนฟัน ผ่าฟันคุด และผ่าตัดช่องปาก", icon: "🦷" },
+    { id: 2, name: "ทันตกรรมหัตถการ", description: "อุดฟัน ขูดหินปูน และทำความสะอาดฟัน", icon: "🪥" },
+    { id: 3, name: "ทันตกรรมจัดฟัน", description: "เครื่องมือจัดฟันและปรับโครงสร้างขากรรไกร", icon: "✨" }
   ];
 
-  const initialCategories = [
-    { id: 1, name: "ศัลยศาสตร์ช่องปาก", description: "ถอนฟัน ผ่าฟันครุฑ และงานศัลยกรรม", icon: "🦷" },
-    { id: 2, name: "ทันตกรรมหัตถการ", description: "อุดฟัน ขูดหินปูน และทำความสะอาด", icon: "🪥" },
-    { id: 3, name: "ทันตกรรมจัดฟัน", description: "เครื่องมือจัดฟันและอุปกรณ์ปรับโครงสร้าง", icon: "✨" }
-  ];
+  /* Booking State */
+  const timeSlots = useMemo(() => [
+    "09:00", "09:30", "10:00", "10:30", "11:00", "13:00", "13:30", "14:00", "14:30", "15:00", "16:00"
+  ], []);
+  const [bookName, setBookName] = useState("");
+  const [bookPhone, setBookPhone] = useState("");
+  const [bookCategoryId, setBookCategoryId] = useState(1);
+  const [bookDate, setBookDate] = useState("");
+  const [bookTime, setBookTime] = useState("");
+  const [confirmation, setConfirmation] = useState(null);
 
-  const dentists = [
-    { id: 1, name: "ทพญ. พิมพ์ชนก วงศ์ทันตกรรม", specialty: "ทันตกรรมทั่วไป", initials: "พช" },
-    { id: 2, name: "ทพ. ธนกร ศัลยกิจ", specialty: "ศัลยศาสตร์ช่องปาก", initials: "ธก" },
-    { id: 3, name: "ทพญ. อารยา จัดฟันดี", specialty: "ทันตกรรมจัดฟัน", initials: "อจ" },
-    { id: 4, name: "ทพ. กิตติ หัตถการเวช", specialty: "ทันตกรรมหัตถการ", initials: "กห" },
-  ];
+  /* Inventory & Appointments State */
+  const [products, setProducts] = useState([
+    { id: 1, name: "ยาชาเฉพาะที่ (Lidocaine 2%)", price: 450, stock: 25 },
+    { id: 2, name: "ไหมขัดฟันทางการแพทย์ (Dental Floss)", price: 85, stock: 4 },
+    { id: 3, name: "ชุดกระจกส่องตรวจและสำลี (Dental Kit)", price: 120, stock: 18 }
+  ]);
+  const [prodName, setProdName] = useState("");
+  const [prodPrice, setProdPrice] = useState("");
+  const [prodStock, setProdStock] = useState("");
+  const [appointments, setAppointments] = useState([]);
+  const [filterStatus, setFilterStatus] = useState('ALL');
 
-  const [products, setProducts] = useState(initialProducts);
-  const [name, setName] = useState("");
-  const [price, setPrice] = useState("");
-  const [stock, setStock] = useState("");
-  const [productSearch, setProductSearch] = useState("");
+  useEffect(() => {
+    if (currentUser) {
+      setBookName(currentUser.full_name || '');
+      setBookPhone(currentUser.phone_number || '');
+    }
+  }, [currentUser]);
 
-  const [categories, setCategories] = useState(initialCategories);
-  const [catName, setCatName] = useState("");
-  const [catDesc, setCatDesc] = useState("");
-  const [catSearch, setCatSearch] = useState("");
-
-  /* Handlers: Auth */
+  /* Auth Handlers */
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
     setAuthError('');
@@ -279,19 +249,14 @@ const App = () => {
 
     if (authMode === 'register') {
       try {
-        // อัปเดต IP ให้เป็น 192.168.0.133
-        const res = await fetch('http://192.168.0.133:3000/api/auth/register', {
+        const res = await fetch(`${API_URL}/auth/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ full_name: authFullName, phone_number: authPhone, password: authPassword })
         });
-        
         const data = await res.json();
-        
-        if (!res.ok) {
-          throw new Error(data.error ? `ปัญหาฐานข้อมูล: ${data.error}` : data.message);
-        }
-        
+        if (!res.ok) throw new Error(data.error || data.message || 'การสมัครสมาชิกล้มเหลว');
+
         setAuthSuccess('สมัครสมาชิกสำเร็จ กรุณาเข้าสู่ระบบ');
         setAuthMode('login');
         setAuthPassword('');
@@ -301,10 +266,9 @@ const App = () => {
       return;
     }
 
-    // อัปเดต IP ให้เป็น 192.168.0.133
     const endpoint = authRole === 'customer' 
-      ? 'http://192.168.0.133:3000/api/auth/login/customer' 
-      : 'http://192.168.0.133:3000/api/auth/login/staff';
+      ? `${API_URL}/auth/login/customer` 
+      : `${API_URL}/auth/login/staff`;
 
     try {
       const res = await fetch(endpoint, {
@@ -318,189 +282,78 @@ const App = () => {
       setCurrentUser(data.user);
       setAuthPhone('');
       setAuthPassword('');
-      goTo(authRole === 'staff' ? 'supplies' : 'booking');
+      setPage(authRole === 'staff' ? 'supplies' : 'booking');
     } catch (err) {
-      setAuthError(err.message || 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ');
+      setAuthError(err.message);
     }
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
-    goTo('home');
+    setPage('home');
   };
 
-  /* Handlers: Product */
-  const handleAddProduct = () => {
-    if (!name.trim() || !price || !stock) {
-      alert("กรุณากรอกข้อมูลอุปกรณ์ทันตกรรมให้ครบถ้วน");
+  const handleBookingSubmit = (e) => {
+    e.preventDefault();
+    if (!bookName.trim() || !bookPhone.trim() || !bookDate || !bookTime) {
+      alert("กรุณากรอกข้อมูลให้ครบถ้วน");
       return;
     }
-    const newProduct = { name, price: Number(price), stock: Number(stock), id: Date.now() };
-    setProducts([...products, newProduct]);
-    setName(""); setPrice(""); setStock("");
+    const selectedCat = categories.find(c => c.id === bookCategoryId);
+    setConfirmation({
+      code: `DC-${Date.now().toString().slice(-4)}`,
+      patientName: bookName,
+      treatment: selectedCat?.name || "ตรวจสุขภาพฟัน",
+      date: bookDate,
+      time: bookTime
+    });
   };
-
-  const handleDeleteProduct = (id) => {
-    setProducts(products.filter((p) => p.id !== id));
-  };
-
-  /* Handlers: Category */
-  const handleAddCategory = () => {
-    if (!catName.trim()) {
-      alert("กรุณากรอกชื่อหมวดหมู่การรักษา");
-      return;
-    }
-    const newCategory = { name: catName, description: catDesc, icon: "🦷", id: Date.now() };
-    setCategories([...categories, newCategory]);
-    setCatName(""); setCatDesc("");
-  };
-
-  const handleDeleteCategory = (id) => {
-    setCategories(categories.filter((c) => c.id !== id));
-  };
-
-  const filteredProducts = products.filter((prd) =>
-    prd.name.toLowerCase().includes(productSearch.toLowerCase())
-  );
-  const filteredCategories = categories.filter((cat) =>
-    cat.name.toLowerCase().includes(catSearch.toLowerCase()) ||
-    (cat.description && cat.description.toLowerCase().includes(catSearch.toLowerCase()))
-  );
-
-  /* Booking State */
-  const timeSlots = useMemo(() => {
-    const slots = [];
-    for (let h = 9; h <= 17; h++) {
-      slots.push(`${String(h).padStart(2, '0')}:00`);
-      if (h !== 17) slots.push(`${String(h).padStart(2, '0')}:30`);
-    }
-    return slots;
-  }, []);
-  const takenSlots = ["10:00", "10:30", "14:00", "15:30"];
-
-  const [bookName, setBookName] = useState("");
-  const [bookPhone, setBookPhone] = useState("");
-  const [bookCategoryId, setBookCategoryId] = useState(null);
-  const [bookDentistId, setBookDentistId] = useState(null);
-  const [bookDate, setBookDate] = useState("");
-  const [bookTime, setBookTime] = useState("");
-  const [bookNote, setBookNote] = useState("");
-  const [confirmation, setConfirmation] = useState(null);
-
-  useEffect(() => {
-    if (currentUser && (currentUser.role === 'user' || currentUser.role === 'PATIENT')) {
-      setBookName(currentUser.full_name || '');
-      setBookPhone(currentUser.phone_number || '');
-    }
-  }, [currentUser]);
-
-  const handleStartBookingForCategory = (id) => {
-    setBookCategoryId(id);
-    goTo('booking');
-  };
-
-  const handleSubmitBooking = () => {
-    if (!bookName.trim() || !bookPhone.trim() || !bookCategoryId || !bookDentistId || !bookDate || !bookTime) {
-      alert("กรุณากรอกข้อมูลการจองคิวให้ครบถ้วน");
-      return;
-    }
-    const bookingPayload = {
-      name: bookName, phone: bookPhone, categoryId: bookCategoryId,
-      dentistId: bookDentistId, date: bookDate, time: bookTime, note: bookNote,
-    };
-    const code = `DC-${Date.now().toString().slice(-6)}`;
-    setConfirmation({ code, ...bookingPayload });
-  };
-
-  const resetBookingForm = () => {
-    setBookName(currentUser?.full_name || ""); 
-    setBookPhone(currentUser?.phone_number || ""); 
-    setBookCategoryId(null);
-    setBookDentistId(null); 
-    setBookDate(""); 
-    setBookTime(""); 
-    setBookNote("");
-    setConfirmation(null);
-  };
-
-  const selectedCategory = categories.find((c) => c.id === bookCategoryId);
-  const selectedDentist = dentists.find((d) => d.id === bookDentistId);
-  const todayStr = new Date().toISOString().split('T')[0];
-
-  const navItems = [
-    { id: 'home', label: 'หน้าแรก' },
-    { id: 'booking', label: 'จองคิว' },
-    { id: 'categories', label: 'หมวดหมู่การรักษา' },
-    ...(currentUser?.role && ['admin', 'staff', 'dentist'].includes(currentUser.role) 
-      ? [{ id: 'supplies', label: 'คลังอุปกรณ์ (พนักงาน)' }] 
-      : []),
-    { id: 'contact', label: 'ติดต่อเรา' },
-  ];
 
   return (
-    <div className="dc-root" style={themeVars} data-theme={theme}>
+    <div className="dc-root" style={themeVars}>
       <style>{GLOBAL_STYLES}</style>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
 
-      {/* ============ NAVBAR ============ */}
+      {/* NAVBAR */}
       <nav className="dc-navbar">
-        <div className="container d-flex align-items-center justify-content-between py-2" style={{ gap: '1rem', flexWrap: 'wrap' }}>
-          <div className="d-flex align-items-center gap-2" style={{ cursor: 'pointer' }} onClick={() => goTo('home')}>
-            <div className="dc-brand-mark">🦷</div>
+        <div className="container d-flex align-items-center justify-content-between py-2 flex-wrap gap-2">
+          <div className="d-flex align-items-center gap-2" style={{ cursor: 'pointer' }} onClick={() => setPage('home')}>
+            <div className="dc-brand-mark" style={{ color: 'var(--on-primary)' }}>🦷</div>
             <div>
               <div className="dc-display fw-bold" style={{ fontSize: '1.05rem', lineHeight: 1.1 }}>ไข่มุก เดนทัล แคร์</div>
               <div className="dc-mono" style={{ fontSize: '.68rem', color: 'var(--text-muted)' }}>PEARL DENTAL CARE</div>
             </div>
           </div>
 
-          <button
-            className="d-md-none dc-btn dc-btn-ghost"
-            style={{ padding: '.4rem .8rem' }}
-            onClick={() => setNavOpen(!navOpen)}
-          >
-            ☰ เมนู
-          </button>
-
-          <div className={`dc-nav-links d-flex align-items-center gap-1 ${navOpen ? 'is-open' : ''}`} style={{ flexWrap: 'wrap' }}>
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                className={`dc-nav-link ${page === item.id ? 'active' : ''}`}
-                onClick={() => goTo(item.id)}
-              >
-                {item.label}
-              </button>
-            ))}
+          <div className="d-flex align-items-center gap-1 flex-wrap">
+            <button className={`dc-nav-link ${page === 'home' ? 'active' : ''}`} onClick={() => setPage('home')}>หน้าแรก</button>
+            <button className={`dc-nav-link ${page === 'booking' ? 'active' : ''}`} onClick={() => setPage('booking')}>จองคิวนัดตรวจ</button>
+            <button className={`dc-nav-link ${page === 'supplies' ? 'active' : ''}`} onClick={() => setPage('supplies')}>คลังเวชภัณฑ์</button>
+            <button className={`dc-nav-link ${page === 'dashboard' ? 'active' : ''}`} onClick={() => setPage('dashboard')}>คิวนัดหมายคลินิก</button>
           </div>
 
-          <div className="d-flex align-items-center gap-3">
+          <div className="d-flex align-items-center gap-2">
             {currentUser ? (
               <div className="d-flex align-items-center gap-2">
                 <span className="dc-badge" style={{ background: 'var(--surface-strong)', color: 'var(--text)' }}>
-                  👤 {currentUser.full_name} ({currentUser.role})
+                  👤 {currentUser.full_name || currentUser.phone_number}
                 </span>
                 <button className="dc-btn-outline-danger" onClick={handleLogout}>ออกจากระบบ</button>
               </div>
             ) : (
-              <button
-                className="dc-btn dc-btn-ghost"
+              <button 
+                className={`dc-btn dc-btn-ghost ${page === 'auth' ? 'dc-btn-primary' : ''}`} 
                 style={{ padding: '.45rem 1rem', fontSize: '.85rem' }}
-                onClick={() => goTo('auth')}
+                onClick={() => { setPage('auth'); setAuthError(''); setAuthSuccess(''); }}
               >
                 เข้าสู่ระบบ / สมัคร
               </button>
             )}
 
             <button
-              className="dc-btn dc-btn-accent d-none d-md-inline-flex"
-              style={{ padding: '.5rem 1.1rem', fontSize: '.85rem' }}
-              onClick={() => goTo('booking')}
-            >
-              จองคิวเลย
-            </button>
-            <button
               className={`dc-theme-toggle ${theme === 'dark' ? 'is-dark' : ''}`}
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              aria-label="สลับโหมดมืด/สว่าง"
+              aria-label="Theme toggle"
             >
               <span className="dc-theme-toggle-knob">{theme === 'dark' ? '🌙' : '☀️'}</span>
             </button>
@@ -508,42 +361,49 @@ const App = () => {
         </div>
       </nav>
 
-      {/* ============ PAGE: AUTH ============ */}
+      {/* PAGE: AUTH (LOGIN / REGISTER) */}
       {page === 'auth' && (
         <div className="container py-5">
           <div className="row justify-content-center">
             <div className="col-md-6 col-lg-5">
-              <div className="dc-card p-4">
+              <div className="dc-card p-4 p-md-5">
+                
+                {/* สลับบทบาท (คนไข้ / เจ้าหน้าที่) */}
                 <div className="d-flex gap-2 mb-4 p-1 dc-card-flat">
                   <button
+                    type="button"
                     className={`dc-btn w-100 justify-content-center ${authRole === 'customer' ? 'dc-btn-primary' : 'dc-btn-ghost'}`}
-                    style={{ padding: '.5rem' }}
+                    style={{ padding: '.45rem', fontSize: '.88rem' }}
                     onClick={() => { setAuthRole('customer'); setAuthError(''); setAuthSuccess(''); }}
                   >
-                    คนไข้ / ลูกค้า
+                    คนไข้ / ผู้รับบริการ
                   </button>
                   <button
+                    type="button"
                     className={`dc-btn w-100 justify-content-center ${authRole === 'staff' ? 'dc-btn-accent' : 'dc-btn-ghost'}`}
-                    style={{ padding: '.5rem' }}
+                    style={{ padding: '.45rem', fontSize: '.88rem' }}
                     onClick={() => { setAuthRole('staff'); setAuthMode('login'); setAuthError(''); setAuthSuccess(''); }}
                   >
                     เจ้าหน้าที่คลินิก
                   </button>
                 </div>
 
-                <h4 className="dc-display fw-bold mb-3 text-center">
-                  {authRole === 'staff'
-                    ? 'เข้าสู่ระบบเจ้าหน้าที่'
-                    : authMode === 'login' ? 'เข้าสู่ระบบคนไข้' : 'สมัครสมาชิกคนไข้ใหม่'}
-                </h4>
+                <div className="text-center mb-4">
+                  <h4 className="dc-display fw-bold mb-1">
+                    {authRole === 'staff' ? 'เข้าสู่ระบบเจ้าหน้าที่' : authMode === 'login' ? 'เข้าสู่ระบบคนไข้' : 'สมัครสมาชิกคนไข้ใหม่'}
+                  </h4>
+                  <p className="small mb-0" style={{ color: 'var(--text-muted)' }}>
+                    {authRole === 'staff' ? 'ระบบจัดการหลังบ้านและเวชภัณฑ์' : 'เข้าถึงข้อมูลนัดหมายและประวัติส่วนตัว'}
+                  </p>
+                </div>
 
                 {authError && (
-                  <div className="p-3 mb-3 dc-card-flat" style={{ borderColor: '#C24B4B', color: '#C24B4B', fontSize: '.9rem' }}>
+                  <div className="p-3 mb-3 dc-card-flat" style={{ borderColor: 'var(--danger)', color: 'var(--danger)', fontSize: '.88rem' }}>
                     ⚠️ {authError}
                   </div>
                 )}
                 {authSuccess && (
-                  <div className="p-3 mb-3 dc-card-flat" style={{ borderColor: 'var(--success)', color: 'var(--success)', fontSize: '.9rem' }}>
+                  <div className="p-3 mb-3 dc-card-flat" style={{ borderColor: 'var(--success)', color: 'var(--success)', fontSize: '.88rem' }}>
                     ✅ {authSuccess}
                   </div>
                 )}
@@ -553,6 +413,7 @@ const App = () => {
                     <div className="mb-3">
                       <label className="dc-label">ชื่อ - นามสกุล</label>
                       <input
+                        type="text"
                         className="dc-input"
                         placeholder="กรอกชื่อ-นามสกุลของคุณ"
                         value={authFullName}
@@ -563,10 +424,11 @@ const App = () => {
                   )}
 
                   <div className="mb-3">
-                    <label className="dc-label">เบอร์โทรศัพท์</label>
+                    <label className="dc-label">เบอร์โทรศัพท์ (ใช้เป็น Username)</label>
                     <input
+                      type="tel"
                       className="dc-input"
-                      placeholder="08xxxxxxxx"
+                      placeholder="08XXXXXXXX"
                       value={authPhone}
                       onChange={(e) => setAuthPhone(e.target.value)}
                       required
@@ -594,25 +456,27 @@ const App = () => {
                 </form>
 
                 {authRole === 'customer' && (
-                  <div className="text-center mt-3" style={{ fontSize: '.88rem' }}>
+                  <div className="text-center mt-4" style={{ fontSize: '.88rem' }}>
                     {authMode === 'login' ? (
                       <div>
-                        ยังไม่มีบัญชีใช่หรือไม่?{' '}
+                        ยังไม่มีบัญชีสมาชิก?{' '}
                         <button
+                          type="button"
                           className="dc-nav-link text-decoration-underline p-0 d-inline"
                           style={{ color: 'var(--primary)' }}
-                          onClick={() => { setAuthMode('register'); setAuthError(''); }}
+                          onClick={() => { setAuthMode('register'); setAuthError(''); setAuthSuccess(''); }}
                         >
                           สมัครสมาชิกที่นี่
                         </button>
                       </div>
                     ) : (
                       <div>
-                        มีบัญชีแล้วใช่หรือไม่?{' '}
+                        มีบัญชีอยู่แล้ว?{' '}
                         <button
+                          type="button"
                           className="dc-nav-link text-decoration-underline p-0 d-inline"
                           style={{ color: 'var(--primary)' }}
-                          onClick={() => { setAuthMode('login'); setAuthError(''); }}
+                          onClick={() => { setAuthMode('login'); setAuthError(''); setAuthSuccess(''); }}
                         >
                           เข้าสู่ระบบ
                         </button>
@@ -626,492 +490,235 @@ const App = () => {
         </div>
       )}
 
-      {/* ============ PAGE: HOME ============ */}
+      {/* PAGE: HOME */}
       {page === 'home' && (
-        <>
-          <section className="dc-hero">
-            <div className="container py-5">
-              <div className="row align-items-center g-5 py-4">
-                <div className="col-lg-6">
-                  <div className="dc-eyebrow mb-3">คลินิกทันตกรรมที่ไว้ใจได้</div>
-                  <h1 className="dc-display fw-bold mb-3" style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', lineHeight: 1.2 }}>
-                    ยิ้มอย่างมั่นใจ<br />ดูแลฟันอย่างเข้าใจ
-                  </h1>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', maxWidth: '480px' }} className="mb-4">
-                    นัดหมายทันตแพทย์ผู้เชี่ยวชาญได้ง่ายในไม่กี่ขั้นตอน พร้อมทีมงานที่ดูแลทุกรายละเอียด
-                    ตั้งแต่การตรวจสุขภาพช่องปากไปจนถึงงานทันตกรรมเฉพาะทาง
-                  </p>
-                  <div className="d-flex gap-3 flex-wrap">
-                    <button className="dc-btn dc-btn-primary" onClick={() => goTo('booking')}>
-                      จองคิวทันที →
-                    </button>
-                    <button className="dc-btn dc-btn-ghost" onClick={() => goTo('categories')}>
-                      ดูบริการของเรา
-                    </button>
-                  </div>
-
-                  <div className="d-flex gap-4 mt-5 flex-wrap">
-                    <div>
-                      <div className="dc-stat-number dc-mono">12+</div>
-                      <div style={{ color: 'var(--text-muted)', fontSize: '.85rem' }}>ปีที่ดูแลคนไข้</div>
-                    </div>
-                    <div>
-                      <div className="dc-stat-number dc-mono">{dentists.length}</div>
-                      <div style={{ color: 'var(--text-muted)', fontSize: '.85rem' }}>ทันตแพทย์ผู้เชี่ยวชาญ</div>
-                    </div>
-                    <div>
-                      <div className="dc-stat-number dc-mono">98%</div>
-                      <div style={{ color: 'var(--text-muted)', fontSize: '.85rem' }}>ความพึงพอใจของคนไข้</div>
-                    </div>
-                  </div>
+        <div className="container py-5">
+          <div className="dc-hero p-5 rounded-4 mb-5">
+            <div className="row align-items-center g-4">
+              <div className="col-lg-7">
+                <div className="dc-eyebrow mb-2">คลินิกทันตกรรมครบวงจร</div>
+                <h1 className="dc-display fw-bold mb-3" style={{ fontSize: '2.5rem' }}>
+                  ยิ้มอย่างมั่นใจ<br />ดูแลฟันโดยแพทย์ผู้เชี่ยวชาญ
+                </h1>
+                <p style={{ color: 'var(--text-muted)' }} className="mb-4">
+                  บริการตรวจสุขภาพช่องปาก อุดฟัน ขูดหินปูน ผ่าฟันคุด และจัดฟัน พร้อมระบบนัดหมายออนไลน์ที่สะดวก รวดเร็ว
+                </p>
+                <div className="d-flex gap-3">
+                  <button className="dc-btn dc-btn-primary" onClick={() => setPage('booking')}>จองคิวนัดหมาย →</button>
+                  <button className="dc-btn dc-btn-ghost" onClick={() => setPage('dashboard')}>ตรวจสอบคิวตรวจ</button>
                 </div>
-
-                <div className="col-lg-6">
-                  <div
-                    className="dc-blob p-5 d-flex align-items-center justify-content-center"
-                    style={{ background: 'linear-gradient(150deg, var(--surface-strong), var(--accent-soft))', minHeight: '340px' }}
-                  >
-                    <div className="text-center">
-                      <div style={{ fontSize: '5rem' }}>✨</div>
-                      <div className="dc-display fw-semibold mt-2" style={{ fontSize: '1.2rem' }}>คิวว่างวันนี้</div>
-                      <div style={{ color: 'var(--text-muted)' }}>{timeSlots.length - takenSlots.length} ช่วงเวลาให้เลือก</div>
-                    </div>
-                  </div>
+              </div>
+              <div className="col-lg-5 text-center">
+                <div className="dc-blob p-5" style={{ background: 'var(--surface-strong)', fontSize: '5rem' }}>
+                  🦷
                 </div>
               </div>
             </div>
-          </section>
+          </div>
 
-          <GumlineDivider />
-
-          {/* Services */}
-          <section className="py-5" style={{ background: 'var(--surface)' }}>
-            <div className="container">
-              <div className="text-center mb-5">
-                <div className="dc-eyebrow mb-2">บริการของเรา</div>
-                <h2 className="dc-display fw-bold" style={{ fontSize: '1.9rem' }}>หมวดหมู่การรักษาที่พร้อมดูแลคุณ</h2>
+          <div className="row g-4">
+            {categories.map((cat) => (
+              <div className="col-md-4" key={cat.id}>
+                <div className="dc-card p-4 h-100">
+                  <div className="dc-icon-well mb-3" style={{ background: 'var(--accent-soft)' }}>{cat.icon}</div>
+                  <h5 className="dc-display fw-semibold mb-2">{cat.name}</h5>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '.92rem' }}>{cat.description}</p>
+                </div>
               </div>
-              <div className="row g-4">
-                {categories.map((cat) => (
-                  <div className="col-md-4" key={cat.id}>
-                    <div className="dc-card p-4 h-100">
-                      <div className="dc-icon-well mb-3" style={{ background: 'var(--accent-soft)' }}>
-                        {cat.icon || '🦷'}
-                      </div>
-                      <h5 className="dc-display fw-semibold mb-2">{cat.name}</h5>
-                      <p style={{ color: 'var(--text-muted)', fontSize: '.92rem', minHeight: '48px' }}>
-                        {cat.description || 'ไม่มีคำอธิบายเพิ่มเติม'}
-                      </p>
-                      <button
-                        className="dc-btn dc-btn-ghost w-100 justify-content-center mt-2"
-                        onClick={() => handleStartBookingForCategory(cat.id)}
-                      >
-                        จองคิวหมวดนี้
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          <GumlineDivider flip />
-
-          {/* Dentists */}
-          <section className="py-5">
-            <div className="container">
-              <div className="text-center mb-5">
-                <div className="dc-eyebrow mb-2">ทีมทันตแพทย์</div>
-                <h2 className="dc-display fw-bold" style={{ fontSize: '1.9rem' }}>พบกับทันตแพทย์ผู้เชี่ยวชาญของเรา</h2>
-              </div>
-              <div className="row g-4">
-                {dentists.map((d) => (
-                  <div className="col-6 col-md-3" key={d.id}>
-                    <div className="dc-card-flat p-3 text-center h-100">
-                      <div
-                        className="dc-blob mx-auto mb-3 d-flex align-items-center justify-content-center dc-display fw-bold"
-                        style={{ width: '72px', height: '72px', background: 'var(--primary)', color: 'var(--on-primary)', fontSize: '1.3rem' }}
-                      >
-                        {d.initials}
-                      </div>
-                      <div className="fw-semibold" style={{ fontSize: '.95rem' }}>{d.name}</div>
-                      <div style={{ color: 'var(--text-muted)', fontSize: '.82rem' }}>{d.specialty}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        </>
+            ))}
+          </div>
+        </div>
       )}
 
-      {/* ============ PAGE: BOOKING ============ */}
+      {/* PAGE: BOOKING */}
       {page === 'booking' && (
         <div className="container py-5">
           {confirmation ? (
             <div className="row justify-content-center">
-              <div className="col-lg-7">
+              <div className="col-lg-6">
                 <div className="dc-card p-5 text-center">
-                  <div style={{ fontSize: '3.5rem' }}>🎉</div>
-                  <h3 className="dc-display fw-bold mt-3 mb-2">จองคิวสำเร็จแล้ว</h3>
-                  <p style={{ color: 'var(--text-muted)' }}>เราจะติดต่อยืนยันอีกครั้งทางโทรศัพท์ที่ท่านให้ไว้</p>
-                  <div className="dc-card-flat p-4 my-4 text-start mx-auto" style={{ maxWidth: '420px' }}>
-                    <div className="d-flex justify-content-between mb-2">
-                      <span style={{ color: 'var(--text-muted)' }}>รหัสการจอง</span>
-                      <span className="dc-mono fw-bold" style={{ color: 'var(--primary)' }}>{confirmation.code}</span>
-                    </div>
-                    <div className="d-flex justify-content-between mb-2">
-                      <span style={{ color: 'var(--text-muted)' }}>ชื่อคนไข้</span>
-                      <span className="fw-semibold">{confirmation.name}</span>
-                    </div>
-                    <div className="d-flex justify-content-between mb-2">
-                      <span style={{ color: 'var(--text-muted)' }}>หมวดหมู่</span>
-                      <span className="fw-semibold">{selectedCategory?.name || '-'}</span>
-                    </div>
-                    <div className="d-flex justify-content-between mb-2">
-                      <span style={{ color: 'var(--text-muted)' }}>ทันตแพทย์</span>
-                      <span className="fw-semibold">{selectedDentist?.name || '-'}</span>
-                    </div>
-                    <div className="d-flex justify-content-between">
-                      <span style={{ color: 'var(--text-muted)' }}>วันเวลานัดหมาย</span>
-                      <span className="dc-mono fw-semibold">{confirmation.date} • {confirmation.time}</span>
-                    </div>
+                  <div style={{ fontSize: '3rem' }}>🎉</div>
+                  <h3 className="dc-display fw-bold mt-2">จองคิวนัดหมายสำเร็จ</h3>
+                  <div className="dc-card-flat p-3 my-4 text-start">
+                    <div><strong>รหัสนัดหมาย:</strong> <span className="dc-mono">{confirmation.code}</span></div>
+                    <div><strong>ชื่อคนไข้:</strong> {confirmation.patientName}</div>
+                    <div><strong>การรักษา:</strong> {confirmation.treatment}</div>
+                    <div><strong>วัน-เวลา:</strong> {confirmation.date} • {confirmation.time} น.</div>
                   </div>
-                  <button className="dc-btn dc-btn-primary" onClick={resetBookingForm}>จองคิวใหม่อีกครั้ง</button>
+                  <button className="dc-btn dc-btn-primary" onClick={() => setConfirmation(null)}>จองคิวใหม่</button>
                 </div>
               </div>
             </div>
           ) : (
-            <>
-              <div className="text-center mb-5">
-                <div className="dc-eyebrow mb-2">นัดหมาย</div>
-                <h2 className="dc-display fw-bold" style={{ fontSize: '2rem' }}>จองคิวทันตกรรม</h2>
-                <p style={{ color: 'var(--text-muted)' }}>เลือกหมวดหมู่ ทันตแพทย์ และเวลาที่สะดวก</p>
-              </div>
-
-              <div className="row g-4">
-                <div className="col-lg-8">
-                  {/* Step 1: Category */}
-                  <div className="dc-card p-4 mb-4">
-                    <h6 className="dc-display fw-semibold mb-3">1. เลือกหมวดหมู่การรักษา</h6>
+            <div className="row justify-content-center">
+              <div className="col-lg-8">
+                <div className="dc-card p-4 mb-4">
+                  <h5 className="dc-display fw-bold mb-3">จองคิวนัดหมายทันตกรรม</h5>
+                  <form onSubmit={handleBookingSubmit}>
                     <div className="row g-3">
-                      {categories.map((cat) => (
-                        <div className="col-md-4" key={cat.id}>
-                          <div
-                            className={`dc-dentist-card dc-card-flat p-3 text-center h-100 ${bookCategoryId === cat.id ? 'is-selected' : ''}`}
-                            onClick={() => setBookCategoryId(cat.id)}
-                          >
-                            <div style={{ fontSize: '1.6rem' }}>{cat.icon || '🦷'}</div>
-                            <div className="fw-semibold mt-1" style={{ fontSize: '.88rem' }}>{cat.name}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Step 2: Dentist */}
-                  <div className="dc-card p-4 mb-4">
-                    <h6 className="dc-display fw-semibold mb-3">2. เลือกทันตแพทย์</h6>
-                    <div className="row g-3">
-                      {dentists.map((d) => (
-                        <div className="col-md-6" key={d.id}>
-                          <div
-                            className={`dc-dentist-card dc-card-flat p-3 d-flex align-items-center gap-3 ${bookDentistId === d.id ? 'is-selected' : ''}`}
-                            onClick={() => setBookDentistId(d.id)}
-                          >
-                            <div
-                              className="dc-blob d-flex align-items-center justify-content-center dc-display fw-bold flex-shrink-0"
-                              style={{ width: '48px', height: '48px', background: 'var(--primary)', color: 'var(--on-primary)', fontSize: '1rem' }}
-                            >
-                              {d.initials}
-                            </div>
-                            <div>
-                              <div className="fw-semibold" style={{ fontSize: '.9rem' }}>{d.name}</div>
-                              <div style={{ color: 'var(--text-muted)', fontSize: '.8rem' }}>{d.specialty}</div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Step 3: Date & Time */}
-                  <div className="dc-card p-4">
-                    <h6 className="dc-display fw-semibold mb-3">3. เลือกวันและเวลา</h6>
-                    <label className="dc-label">วันที่นัดหมาย</label>
-                    <input
-                      type="date"
-                      className="dc-input mb-3"
-                      style={{ maxWidth: '240px' }}
-                      min={todayStr}
-                      value={bookDate}
-                      onChange={(e) => setBookDate(e.target.value)}
-                    />
-                    <label className="dc-label">ช่วงเวลา</label>
-                    <div className="row g-2">
-                      {timeSlots.map((t) => {
-                        const isTaken = takenSlots.includes(t);
-                        return (
-                          <div className="col-3 col-md-2" key={t}>
-                            <div
-                              className={`dc-slot dc-mono ${bookTime === t ? 'is-selected' : ''} ${isTaken ? 'is-taken' : ''}`}
-                              onClick={() => !isTaken && setBookTime(t)}
-                            >
-                              {t}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Contact info + summary */}
-                <div className="col-lg-4">
-                  <div className="dc-card p-4" style={{ position: 'sticky', top: '90px' }}>
-                    <h6 className="dc-display fw-semibold mb-3">ข้อมูลติดต่อ</h6>
-                    <label className="dc-label">ชื่อ-นามสกุล</label>
-                    <input className="dc-input mb-3" placeholder="เช่น สมชาย ใจดี" value={bookName} onChange={(e) => setBookName(e.target.value)} />
-                    <label className="dc-label">เบอร์โทรศัพท์</label>
-                    <input className="dc-input mb-3" placeholder="08X-XXX-XXXX" value={bookPhone} onChange={(e) => setBookPhone(e.target.value)} />
-                    <label className="dc-label">หมายเหตุ (ถ้ามี)</label>
-                    <textarea className="dc-input mb-4" rows="3" placeholder="อาการเบื้องต้น หรือความต้องการเพิ่มเติม" value={bookNote} onChange={(e) => setBookNote(e.target.value)} />
-
-                    <div className="dc-card-flat p-3 mb-4" style={{ fontSize: '.85rem' }}>
-                      <div className="d-flex justify-content-between mb-1">
-                        <span style={{ color: 'var(--text-muted)' }}>หมวดหมู่</span>
-                        <span className="fw-semibold">{selectedCategory?.name || '—'}</span>
+                      <div className="col-md-6">
+                        <label className="dc-label">ชื่อ-นามสกุล คนไข้</label>
+                        <input className="dc-input" value={bookName} onChange={(e) => setBookName(e.target.value)} required />
                       </div>
-                      <div className="d-flex justify-content-between mb-1">
-                        <span style={{ color: 'var(--text-muted)' }}>ทันตแพทย์</span>
-                        <span className="fw-semibold">{selectedDentist?.name || '—'}</span>
+                      <div className="col-md-6">
+                        <label className="dc-label">เบอร์โทรศัพท์ติดต่อ</label>
+                        <input className="dc-input" value={bookPhone} onChange={(e) => setBookPhone(e.target.value)} required />
                       </div>
-                      <div className="d-flex justify-content-between">
-                        <span style={{ color: 'var(--text-muted)' }}>วัน/เวลา</span>
-                        <span className="dc-mono fw-semibold">{bookDate || '—'} {bookTime || ''}</span>
+                      <div className="col-12">
+                        <label className="dc-label">เลือกการรักษา</label>
+                        <select className="dc-input" value={bookCategoryId} onChange={(e) => setBookCategoryId(Number(e.target.value))}>
+                          {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </select>
+                      </div>
+                      <div className="col-md-6">
+                        <label className="dc-label">วันที่สะดวก</label>
+                        <input type="date" className="dc-input" value={bookDate} onChange={(e) => setBookDate(e.target.value)} required />
+                      </div>
+                      <div className="col-md-6">
+                        <label className="dc-label">เวลาที่สะดวก</label>
+                        <select className="dc-input" value={bookTime} onChange={(e) => setBookTime(e.target.value)} required>
+                          <option value="">-- เลือกเวลา --</option>
+                          {timeSlots.map(t => <option key={t} value={t}>{t} น.</option>)}
+                        </select>
+                      </div>
+                      <div className="col-12 mt-4">
+                        <button type="submit" className="dc-btn dc-btn-primary w-100 justify-content-center">ยืนยันการจองคิว</button>
                       </div>
                     </div>
-
-                    <button className="dc-btn dc-btn-accent w-100 justify-content-center" onClick={handleSubmitBooking}>
-                      ยืนยันการจองคิว
-                    </button>
-                  </div>
+                  </form>
                 </div>
               </div>
-            </>
+            </div>
           )}
         </div>
       )}
 
-      {/* ============ PAGE: SUPPLIES ============ */}
+      {/* PAGE: SUPPLIES (คลังเวชภัณฑ์) */}
       {page === 'supplies' && (
         <div className="container py-5">
-          <div className="dc-card mb-2">
-            <div className="p-4 d-flex justify-content-between align-items-center flex-wrap gap-3" style={{ borderBottom: '1px solid var(--border)' }}>
-              <div>
-                <div className="dc-eyebrow mb-1">การจัดการภายใน</div>
-                <h4 className="dc-display fw-bold m-0">คลังอุปกรณ์ทันตกรรม</h4>
-              </div>
-              <input
-                type="text"
-                className="dc-input"
-                style={{ maxWidth: '260px' }}
-                placeholder="ค้นหาอุปกรณ์..."
-                value={productSearch}
-                onChange={(e) => setProductSearch(e.target.value)}
-              />
-            </div>
-            <div className="p-4">
-              <div className="dc-card-flat p-3 mb-4">
-                <h6 className="fw-semibold mb-3">เพิ่มอุปกรณ์ใหม่</h6>
-                <div className="row g-2">
-                  <div className="col-md-4">
-                    <input className="dc-input" placeholder="ชื่ออุปกรณ์" value={name} onChange={(e) => setName(e.target.value)} />
-                  </div>
-                  <div className="col-md-3">
-                    <input type="number" className="dc-input" placeholder="ราคา (฿)" value={price} onChange={(e) => setPrice(e.target.value)} />
-                  </div>
-                  <div className="col-md-3">
-                    <input type="number" className="dc-input" placeholder="จำนวนคงเหลือ" value={stock} onChange={(e) => setStock(e.target.value)} />
-                  </div>
-                  <div className="col-md-2">
-                    <button className="dc-btn dc-btn-primary w-100 justify-content-center" onClick={handleAddProduct}>+ เพิ่ม</button>
-                  </div>
+          <div className="dc-card p-4">
+            <h5 className="dc-display fw-bold mb-3">คลังเวชภัณฑ์และอุปกรณ์ทันตกรรม</h5>
+            <div className="dc-card-flat p-3 mb-4">
+              <div className="row g-2">
+                <div className="col-md-5">
+                  <input className="dc-input" placeholder="ชื่อเวชภัณฑ์/อุปกรณ์" value={prodName} onChange={(e) => setProdName(e.target.value)} />
+                </div>
+                <div className="col-md-3">
+                  <input type="number" className="dc-input" placeholder="ราคา (฿)" value={prodPrice} onChange={(e) => setProdPrice(e.target.value)} />
+                </div>
+                <div className="col-md-2">
+                  <input type="number" className="dc-input" placeholder="คงเหลือ" value={prodStock} onChange={(e) => setProdStock(e.target.value)} />
+                </div>
+                <div className="col-md-2">
+                  <button className="dc-btn dc-btn-primary w-100 justify-content-center" onClick={() => {
+                    if (prodName && prodPrice && prodStock) {
+                      setProducts([...products, { id: Date.now(), name: prodName, price: Number(prodPrice), stock: Number(prodStock) }]);
+                      setProdName(''); setProdPrice(''); setProdStock('');
+                    }
+                  }}>+ เพิ่ม</button>
                 </div>
               </div>
+            </div>
 
-              <div className="table-responsive">
-                <table className="dc-table w-100">
-                  <thead>
+            <table className="dc-table w-100">
+              <thead>
+                <tr>
+                  <th>รหัส</th>
+                  <th>ชื่อเวชภัณฑ์</th>
+                  <th>ราคา</th>
+                  <th>คงเหลือ</th>
+                  <th className="text-end">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {products.map(p => (
+                  <tr key={p.id}>
+                    <td className="dc-mono">#{p.id}</td>
+                    <td className="fw-semibold">{p.name}</td>
+                    <td className="dc-mono">฿{p.price}</td>
+                    <td>
+                      <span className="dc-badge" style={{ background: p.stock < 5 ? 'var(--danger-soft)' : 'var(--success-soft)', color: p.stock < 5 ? 'var(--danger)' : 'var(--success)' }}>
+                        {p.stock} หน่วย
+                      </span>
+                    </td>
+                    <td className="text-end">
+                      <button className="dc-btn-outline-danger" onClick={() => setProducts(products.filter(item => item.id !== p.id))}>ลบ</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* PAGE: DASHBOARD (คิวนัดหมาย) */}
+      {page === 'dashboard' && (
+        <div className="container py-5">
+          <div className="dc-card p-4">
+            <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+              <h5 className="dc-display fw-bold mb-0">รายการคิวนัดหมายคนไข้</h5>
+              <div className="d-flex gap-1">
+                {['ALL', 'PENDING', 'COMPLETED'].map(st => (
+                  <button
+                    key={st}
+                    className={`dc-nav-link ${filterStatus === st ? 'active' : ''}`}
+                    onClick={() => setFilterStatus(st)}
+                  >
+                    {st === 'ALL' ? 'ทั้งหมด' : st === 'PENDING' ? 'รอดำเนินการ' : 'ตรวจแล้ว'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="table-responsive">
+              <table className="dc-table w-100">
+                <thead>
+                  <tr>
+                    <th>ชื่อคนไข้</th>
+                    <th>เบอร์โทร</th>
+                    <th>รายการรักษา</th>
+                    <th>วัน-เวลานัด</th>
+                    <th>สถานะ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {appointments.length === 0 ? (
                     <tr>
-                      <th style={{ width: '80px' }}>ID</th>
-                      <th>ชื่ออุปกรณ์</th>
-                      <th>ราคา</th>
-                      <th>คงเหลือ</th>
-                      <th className="text-center" style={{ width: '120px' }}>จัดการ</th>
+                      <td colSpan="5" className="text-center py-4 text-muted">ไม่พบข้อมูลนัดหมาย</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {filteredProducts.length === 0 ? (
-                      <tr><td colSpan="5" className="text-center py-4" style={{ color: 'var(--text-muted)' }}>ไม่พบรายการอุปกรณ์</td></tr>
-                    ) : (
-                      filteredProducts.map((prd) => (
-                        <tr key={prd.id}>
-                          <td className="dc-mono" style={{ color: 'var(--text-muted)' }}>#{prd.id}</td>
-                          <td className="fw-semibold">{prd.name}</td>
-                          <td className="dc-mono">฿{Number(prd.price).toLocaleString()}</td>
-                          <td>
-                            <span
-                              className="dc-badge"
-                              style={{
-                                background: prd.stock < 10 ? 'var(--warning-soft)' : 'var(--success-soft)',
-                                color: prd.stock < 10 ? 'var(--warning)' : 'var(--success)',
-                              }}
-                            >
-                              {prd.stock} หน่วย
-                            </span>
-                          </td>
-                          <td className="text-center">
-                            <button className="dc-btn-outline-danger" onClick={() => handleDeleteProduct(prd.id)}>ลบ</button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                  ) : (
+                    appointments.map(app => (
+                      <tr key={app.id}>
+                        <td className="fw-semibold">{app.patientName}</td>
+                        <td>{app.patientPhone}</td>
+                        <td>{app.treatment}</td>
+                        <td>{new Date(app.appointmentDate).toLocaleString('th-TH')}</td>
+                        <td>
+                          <span className="dc-badge" style={{ background: app.status === 'COMPLETED' ? 'var(--success-soft)' : 'var(--warning-soft)', color: app.status === 'COMPLETED' ? 'var(--success)' : 'var(--warning)' }}>
+                            {app.status === 'COMPLETED' ? 'ตรวจแล้ว' : 'รอดำเนินการ'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
       )}
 
-      {/* ============ PAGE: CATEGORIES ============ */}
-      {page === 'categories' && (
-        <div className="container py-5">
-          <div className="dc-card mb-2">
-            <div className="p-4 d-flex justify-content-between align-items-center flex-wrap gap-3" style={{ borderBottom: '1px solid var(--border)' }}>
-              <div>
-                <div className="dc-eyebrow mb-1">การจัดการภายใน</div>
-                <h4 className="dc-display fw-bold m-0">หมวดหมู่การรักษา</h4>
-              </div>
-              <input
-                type="text"
-                className="dc-input"
-                style={{ maxWidth: '260px' }}
-                placeholder="ค้นหาหมวดหมู่..."
-                value={catSearch}
-                onChange={(e) => setCatSearch(e.target.value)}
-              />
-            </div>
-            <div className="p-4">
-              <div className="dc-card-flat p-3 mb-4">
-                <h6 className="fw-semibold mb-3">เพิ่มหมวดหมู่ใหม่</h6>
-                <div className="row g-2">
-                  <div className="col-md-4">
-                    <input className="dc-input" placeholder="ชื่อหมวดหมู่" value={catName} onChange={(e) => setCatName(e.target.value)} />
-                  </div>
-                  <div className="col-md-6">
-                    <input className="dc-input" placeholder="คำอธิบาย" value={catDesc} onChange={(e) => setCatDesc(e.target.value)} />
-                  </div>
-                  <div className="col-md-2">
-                    <button className="dc-btn dc-btn-accent w-100 justify-content-center" onClick={handleAddCategory}>+ เพิ่ม</button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="row g-3">
-                {filteredCategories.length === 0 ? (
-                  <div className="text-center py-4" style={{ color: 'var(--text-muted)' }}>ไม่พบหมวดหมู่การรักษา</div>
-                ) : (
-                  filteredCategories.map((cat) => (
-                    <div className="col-md-4" key={cat.id}>
-                      <div className="dc-card-flat p-3 h-100">
-                        <div className="d-flex justify-content-between align-items-start mb-2">
-                          <span className="dc-mono" style={{ color: 'var(--text-muted)', fontSize: '.8rem' }}>#{cat.id}</span>
-                          <button className="dc-btn-outline-danger" onClick={() => handleDeleteCategory(cat.id)}>ลบ</button>
-                        </div>
-                        <div style={{ fontSize: '1.4rem' }}>{cat.icon || '🦷'}</div>
-                        <div className="fw-semibold mt-1" style={{ color: 'var(--primary)' }}>{cat.name}</div>
-                        <div style={{ color: 'var(--text-muted)', fontSize: '.85rem' }}>{cat.description || '-'}</div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ============ PAGE: CONTACT ============ */}
-      {page === 'contact' && (
-        <div className="container py-5">
-          <div className="text-center mb-5">
-            <div className="dc-eyebrow mb-2">ติดต่อเรา</div>
-            <h2 className="dc-display fw-bold" style={{ fontSize: '2rem' }}>แวะมาพบเราได้ทุกวัน</h2>
-          </div>
-          <div className="row g-4">
-            <div className="col-lg-5">
-              <div className="dc-card p-4 mb-3">
-                <h6 className="dc-display fw-semibold mb-3">ข้อมูลคลินิก</h6>
-                <div className="mb-3">
-                  <div style={{ color: 'var(--text-muted)', fontSize: '.82rem' }}>ที่อยู่</div>
-                  <div className="fw-semibold">123 ถนนสุขภาพดี แขวงยิ้มสวย เขตฟันขาว กรุงเทพฯ 10110</div>
-                </div>
-                <div className="mb-3">
-                  <div style={{ color: 'var(--text-muted)', fontSize: '.82rem' }}>โทรศัพท์</div>
-                  <div className="fw-semibold dc-mono">02-123-4567</div>
-                </div>
-                <div className="mb-3">
-                  <div style={{ color: 'var(--text-muted)', fontSize: '.82rem' }}>เวลาทำการ</div>
-                  <div className="fw-semibold">จันทร์ – เสาร์ 09:00 – 18:00 น.</div>
-                </div>
-                <div className="mb-0">
-                  <div style={{ color: 'var(--text-muted)', fontSize: '.82rem' }}>อีเมล</div>
-                  <div className="fw-semibold dc-mono">hello@pearldental.example</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="col-lg-7">
-              <div className="dc-card p-4">
-                <h6 className="dc-display fw-semibold mb-3">ส่งข้อความถึงเรา</h6>
-                <div className="row g-3">
-                  <div className="col-md-6">
-                    <label className="dc-label">ชื่อของคุณ</label>
-                    <input className="dc-input" placeholder="ชื่อ-นามสกุล" />
-                  </div>
-                  <div className="col-md-6">
-                    <label className="dc-label">เบอร์โทรกลับ</label>
-                    <input className="dc-input" placeholder="08X-XXX-XXXX" />
-                  </div>
-                  <div className="col-12">
-                    <label className="dc-label">ข้อความ</label>
-                    <textarea className="dc-input" rows="5" placeholder="สอบถามหรือแจ้งความประสงค์..." />
-                  </div>
-                  <div className="col-12">
-                    <button
-                      className="dc-btn dc-btn-primary"
-                      onClick={() => alert('ส่งข้อความเรียบร้อยแล้ว เจ้าหน้าที่จะติดต่อกลับโดยเร็ว')}
-                    >
-                      ส่งข้อความ
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ============ FOOTER ============ */}
+      {/* FOOTER */}
       <footer className="dc-footer py-4 mt-5">
-        <div className="container d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div className="container d-flex justify-content-between align-items-center flex-wrap gap-2">
           <div className="d-flex align-items-center gap-2">
-            <div className="dc-brand-mark" style={{ width: '32px', height: '32px', fontSize: '.9rem' }}>🦷</div>
+            <div className="dc-brand-mark" style={{ width: '28px', height: '28px', fontSize: '.8rem', color: 'var(--on-primary)' }}>🦷</div>
             <span className="dc-display fw-semibold">ไข่มุก เดนทัล แคร์</span>
           </div>
-          <div style={{ color: 'var(--text-muted)', fontSize: '.85rem' }}>© {new Date().getFullYear()} Pearl Dental Care · ระบบคลินิกทันตกรรม</div>
+          <div className="dc-mono" style={{ color: 'var(--text-muted)', fontSize: '.8rem' }}>
+            © {new Date().getFullYear()} Pearl Dental Care Management System
+          </div>
         </div>
       </footer>
     </div>
