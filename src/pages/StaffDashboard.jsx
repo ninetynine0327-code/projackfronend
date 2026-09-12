@@ -9,8 +9,10 @@ const StaffDashboard = () => {
   const fetchAppointments = async () => {
     try {
       const res = await fetch(`${API_URL}/appointments`);
-      const data = await res.json();
-      setAppointments(data);
+      if (res.ok) {
+        const data = await res.json();
+        setAppointments(data);
+      }
     } catch (err) {
       console.error('Fetch error:', err);
     }
@@ -20,79 +22,81 @@ const StaffDashboard = () => {
     fetchAppointments();
   }, []);
 
-  const handleUpdateStatus = async (id, status) => {
-    try {
-      const res = await fetch(`${API_URL}/appointments/${id}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status })
-      });
-      if (res.ok) fetchAppointments();
-    } catch (err) {
-      console.error('Update status error:', err);
-    }
-  };
-
-  const filteredAppointments = appointments.filter((item) => {
+  const filteredAppointments = appointments.filter(item => {
     if (filterStatus === 'ALL') return true;
     return item.status === filterStatus;
   });
 
   return (
-    <div>
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h2>ตารางคิวนัดหมาย</h2>
-        <div className="btn-group">
-          <button className={`btn btn-sm ${filterStatus === 'ALL' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setFilterStatus('ALL')}>ทั้งหมด</button>
-          <button className={`btn btn-sm ${filterStatus === 'PENDING' ? 'btn-warning' : 'btn-outline-secondary'}`} onClick={() => setFilterStatus('PENDING')}>รอดำเนินการ</button>
-          <button className={`btn btn-sm ${filterStatus === 'COMPLETED' ? 'btn-success' : 'btn-outline-secondary'}`} onClick={() => setFilterStatus('COMPLETED')}>เสร็จสิ้น</button>
-          <button className={`btn btn-sm ${filterStatus === 'CANCELLED' ? 'btn-danger' : 'btn-outline-secondary'}`} onClick={() => setFilterStatus('CANCELLED')}>ยกเลิก</button>
+    <div className="container py-5">
+      <div className="dc-card p-4">
+        <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+          <div>
+            <h5 className="dc-display fw-bold mb-0">ตารางคิวนัดหมายคนไข้</h5>
+            <small style={{ color: 'var(--text-muted)' }}>จัดการคิวตรวจทันตแพทย์ทั้งหมด</small>
+          </div>
+          <div className="d-flex gap-1">
+            {['ALL', 'PENDING', 'COMPLETED'].map(st => (
+              <button
+                key={st}
+                className="dc-btn dc-btn-ghost"
+                style={{
+                  padding: '.35rem .9rem',
+                  fontSize: '.82rem',
+                  background: filterStatus === st ? 'var(--primary)' : 'var(--surface)',
+                  color: filterStatus === st ? 'var(--on-primary)' : 'var(--text)'
+                }}
+                onClick={() => setFilterStatus(st)}
+              >
+                {st === 'ALL' ? 'ทั้งหมด' : st === 'PENDING' ? 'รอดำเนินการ' : 'ตรวจเสร็จสิ้น'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="table-responsive">
+          <table className="dc-table w-100">
+            <thead>
+              <tr>
+                <th>ชื่อคนไข้</th>
+                <th>เบอร์ติดต่อ</th>
+                <th>รายการรักษา</th>
+                <th>วัน-เวลานัด</th>
+                <th>สถานะ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredAppointments.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="text-center py-4" style={{ color: 'var(--text-muted)' }}>
+                    ไม่พบรายการนัดหมาย
+                  </td>
+                </tr>
+              ) : (
+                filteredAppointments.map(app => (
+                  <tr key={app.id}>
+                    <td className="fw-semibold">{app.user?.full_name || 'คนไข้ทั่วไป'}</td>
+                    <td>{app.user?.phone_number || '-'}</td>
+                    <td>{app.notes || 'ตรวจสุขภาพฟัน'}</td>
+                    <td>{new Date(app.appointment_date).toLocaleDateString('th-TH')}</td>
+                    <td>
+                      <span
+                        className="dc-badge"
+                        style={{
+                          background: app.status === 'COMPLETED' ? 'var(--success-soft)' : 'var(--warning-soft)',
+                          color: app.status === 'COMPLETED' ? 'var(--success)' : 'var(--warning)'
+                        }}
+                      >
+                        {app.status === 'COMPLETED' ? 'ตรวจเสร็จสิ้น' : 'รอดำเนินการ'}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
-
-      <table className="table table-bordered table-striped">
-        <thead className="table-dark">
-          <tr>
-            <th>Id</th>
-            <th>ชื่อคนไข้</th>
-            <th>เบอร์ติดต่อ</th>
-            <th>การรักษา</th>
-            <th>วัน-เวลานัด</th>
-            <th>สถานะ</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredAppointments.length === 0 ? (
-            <tr>
-              <td colSpan="7" className="text-center">ไม่มีข้อมูลนัดหมาย</td>
-            </tr>
-          ) : (
-            filteredAppointments.map((item) => (
-              <tr key={item.id}>
-                <td>{item.id}</td>
-                <td>{item.patientName}</td>
-                <td>{item.patientPhone}</td>
-                <td>{item.treatment}</td>
-                <td>{new Date(item.appointmentDate).toLocaleString()}</td>
-                <td>{item.status}</td>
-                <td>
-                  {item.status === 'PENDING' && (
-                    <>
-                      <button className="btn btn-success btn-sm me-2" onClick={() => handleUpdateStatus(item.id, 'COMPLETED')}>
-                        เสร็จสิ้น
-                      </button>
-                      <button className="btn btn-danger btn-sm" onClick={() => handleUpdateStatus(item.id, 'CANCELLED')}>
-                        ยกเลิก
-                      </button>
-                    </>
-                  )}
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
     </div>
   );
 };

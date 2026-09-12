@@ -1,33 +1,24 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 const DentalManagement = () => {
-  const [dentists] = useState([
-    { id: 1, name: 'ทพ. สมชาย รักฟัน', specialty: 'ทันตกรรมทั่วไป' },
-    { id: 2, name: 'ทพญ. สุดา ใจดี', specialty: 'จัดฟัน' },
-    { id: 3, name: 'ทพ. วิชัย สดใส', specialty: 'รักษารากฟัน' }
-  ]);
+  const dentists = [
+    { id: 1, name: "ทพญ. พิมพ์ชนก วงศ์ทันตกรรม", specialty: "ทันตกรรมทั่วไป / ขูดหินปูน" },
+    { id: 2, name: "ทพ. ธนกร ศัลยกิจ", specialty: "ศัลยศาสตร์ช่องปาก / ผ่าฟันคุด" }
+  ];
 
   return (
-    <div>
-      <h2>รายชื่อทันตแพทย์</h2>
-      <table className="table table-bordered">
-        <thead className="table-dark">
-          <tr>
-            <th>Id</th>
-            <th>ชื่อ</th>
-            <th>ความเชี่ยวชาญ</th>
-          </tr>
-        </thead>
-        <tbody>
-          {dentists.map((doc) => (
-            <tr key={doc.id}>
-              <td>{doc.id}</td>
-              <td>{doc.name}</td>
-              <td>{doc.specialty}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="container py-5">
+      <h4 className="dc-display fw-bold mb-4">รายชื่อทันตแพทย์ประจำคลินิก</h4>
+      <div className="row g-3">
+        {dentists.map(d => (
+          <div className="col-md-6" key={d.id}>
+            <div className="dc-card p-4">
+              <h5 className="fw-bold mb-1" style={{ color: 'var(--primary)' }}>{d.name}</h5>
+              <p className="mb-0" style={{ color: 'var(--text-muted)' }}>{d.specialty}</p>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
