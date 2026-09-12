@@ -14,14 +14,13 @@ const Home = () => {
         <div className="mb-2" style={{ color: 'var(--accent-strong)', fontWeight: '700', fontSize: '.85rem' }}>คลินิกทันตกรรมครบวงจร</div>
         <h1 className="dc-display fw-bold mb-3" style={{ fontSize: '2.5rem' }}>ยิ้มอย่างมั่นใจ ดูแลฟันโดยแพทย์ผู้เชี่ยวชาญ</h1>
         <p className="mx-auto mb-4" style={{ color: 'var(--text-muted)', maxWidth: '600px' }}>
-          บริการตรวจสุขภาพช่องปาก อุดฟัน ขูดหินปูน ผ่าฟันคุด และจัดฟัน พร้อมระบบนัดหมายออนไลน์ที่สะดวก รวดเร็ว
+          บริการตรวจสุขภาพช่องปาก อุดฟัน ขูดหินปูน ผ่าฟันคุด และจัดฟัน พร้อมระบบนัดหมายออนไลน์
         </p>
         <div className="d-flex justify-content-center gap-3">
           <Link to="/booking" className="dc-btn dc-btn-primary">จองคิวนัดหมาย →</Link>
           <Link to="/portal" className="dc-btn dc-btn-ghost">ตรวจสอบคิวตรวจ</Link>
         </div>
       </div>
-
       <div className="row g-4">
         {categories.map((cat) => (
           <div className="col-md-4" key={cat.id}>

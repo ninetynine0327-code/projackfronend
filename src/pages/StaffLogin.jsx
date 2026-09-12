@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const API_URL = 'http://localhost:4000/api';
+const API_URL = 'https://f9cflrwv-4000.asse.devtunnels.ms/api';
 
 const StaffLogin = () => {
   const [username, setUsername] = useState('');
@@ -12,7 +12,6 @@ const StaffLogin = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
-
     try {
       const res = await fetch(`${API_URL}/auth/login/staff`, {
         method: 'POST',
@@ -33,25 +32,20 @@ const StaffLogin = () => {
   return (
     <div className="container py-5">
       <div className="row justify-content-center">
-        <div className="col-md-6 col-lg-5">
+        <div className="col-md-5">
           <div className="dc-card p-4 p-md-5">
-            <h4 className="dc-display fw-bold mb-1 text-center">เข้าสู่ระบบเจ้าหน้าที่</h4>
-            <p className="small text-center mb-4" style={{ color: 'var(--text-muted)' }}>ระบบจัดการข้อมูลและตารางตรวจ</p>
-
-            {error && <div className="p-3 mb-3 dc-card-flat" style={{ borderColor: 'var(--danger)', color: 'var(--danger)', fontSize: '.88rem' }}>⚠️ {error}</div>}
-
+            <h4 className="dc-display fw-bold mb-4 text-center">ระบบเจ้าหน้าที่</h4>
+            {error && <div className="p-3 mb-3 dc-card-flat text-danger">⚠️ {error}</div>}
             <form onSubmit={handleLogin}>
               <div className="mb-3">
-                <label className="dc-label">ชื่อผู้ใช้งาน / เบอร์โทร</label>
-                <input className="dc-input" placeholder="admin" value={username} onChange={(e) => setUsername(e.target.value)} required />
+                <label className="dc-label">ชื่อผู้ใช้งาน</label>
+                <input className="dc-input" value={username} onChange={(e) => setUsername(e.target.value)} required />
               </div>
               <div className="mb-4">
                 <label className="dc-label">รหัสผ่าน</label>
-                <input type="password" className="dc-input" placeholder="admin123" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                <input type="password" className="dc-input" value={password} onChange={(e) => setPassword(e.target.value)} required />
               </div>
-              <button type="submit" className="dc-btn dc-btn-primary w-100 justify-content-center" style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}>
-                เข้าสู่ระบบเจ้าหน้าที่
-              </button>
+              <button type="submit" className="dc-btn dc-btn-primary w-100 justify-content-center" style={{ background: 'var(--accent)' }}>เข้าสู่ระบบ</button>
             </form>
           </div>
         </div>

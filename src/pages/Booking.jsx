@@ -1,23 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
-const API_URL = 'http://localhost:4000/api';
+const API_URL = 'https://f9cflrwv-4000.asse.devtunnels.ms/api';
 
 const Booking = () => {
   const user = JSON.parse(localStorage.getItem('user') || 'null');
   const [patientName, setPatientName] = useState(user?.full_name || '');
   const [patientPhone, setPatientPhone] = useState(user?.phone_number || '');
   const [treatment, setTreatment] = useState('ตรวจสุขภาพฟันและขูดหินปูน');
-  const [dentistId, setDentistId] = useState(1);
+  const [dentistId, setDentistId] = useState('');
+  const [dentistsList, setDentistsList] = useState([]);
   const [appointmentDate, setAppointmentDate] = useState('');
   const [timeSlot, setTimeSlot] = useState('');
   const [confirmation, setConfirmation] = useState(null);
 
   const timeSlots = ["09:00", "09:30", "10:00", "10:30", "11:00", "13:00", "13:30", "14:00", "14:30", "15:00", "16:00"];
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  useEffect(() => {
+    fetch(`${API_URL}/dentists`)
+      .then(res => res.json())
+      .then(data => {
+        setDentistsList(data);
+        if (data.length > 0) setDentistId(data[0].id);
+      })
+      .catch(err => console.error(err));
+  }, []);
 
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
-    if (!patientName.trim() || !patientPhone.trim() || !appointmentDate || !timeSlot) {
-      alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+    if (!patientName.trim() || !patientPhone.trim() || !appointmentDate || !timeSlot || !dentistId) {
+      alert('กรุณากรอกข้อมูลให้ครบถ้วน และตรวจสอบว่ามีทันตแพทย์ในระบบ');
       return;
     }
 
@@ -52,7 +64,7 @@ const Booking = () => {
         alert(data.message || 'เกิดข้อผิดพลาดในการจองคิว');
       }
     } catch (err) {
-      alert('ไม่สามารถติดต่อเซิร์ฟเวอร์ Backend (พอร์ต 4000) ได้');
+      alert(`ไม่สามารถติดต่อเซิร์ฟเวอร์ Backend ที่ ${API_URL} ได้`);
     }
   };
 
@@ -100,14 +112,16 @@ const Booking = () => {
                   </div>
                   <div className="col-md-6">
                     <label className="dc-label">แพทย์ผู้รักษา</label>
-                    <select className="dc-input" value={dentistId} onChange={(e) => setDentistId(e.target.value)}>
-                      <option value="1">ทพญ. พิมพ์ชนก วงศ์ทันตกรรม</option>
-                      <option value="2">ทพ. ธนกร ศัลยกิจ</option>
+                    <select className="dc-input" value={dentistId} onChange={(e) => setDentistId(e.target.value)} required>
+                      {dentistsList.length === 0 && <option value="">กำลังโหลดข้อมูลแพทย์...</option>}
+                      {dentistsList.map(d => (
+                        <option key={d.id} value={d.id}>{d.full_name}</option>
+                      ))}
                     </select>
                   </div>
                   <div className="col-md-6">
                     <label className="dc-label">วันที่นัดหมาย</label>
-                    <input type="date" className="dc-input" value={appointmentDate} onChange={(e) => setAppointmentDate(e.target.value)} required />
+                    <input type="date" className="dc-input" min={todayStr} value={appointmentDate} onChange={(e) => setAppointmentDate(e.target.value)} required />
                   </div>
                   <div className="col-md-6">
                     <label className="dc-label">เวลาที่สะดวก</label>

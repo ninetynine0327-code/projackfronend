@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const API_URL = 'http://localhost:4000/api';
+const API_URL = 'https://f9cflrwv-4000.asse.devtunnels.ms/api';
 
 const Dashboard = () => {
   const [stats, setStats] = useState({ total: 0, pending: 0, completed: 0 });
