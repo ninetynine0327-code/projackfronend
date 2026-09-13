@@ -27,7 +27,7 @@ const Navigation = () => {
         <Link to="/" className="d-flex align-items-center gap-2 text-decoration-none">
           <div className="dc-brand-mark text-white">🦷</div>
           <div>
-            <div className="dc-display fw-bold text-dark" style={{ fontSize: '1.05rem', lineHeight: 1.1 }}>ไข่มุก เดนทัล แคร์</div>
+            <div className="dc-display fw-bold text-dark" style={{ fontSize: '1.05rem', lineHeight: 1.1 }}>Denti bianchi</div>
           </div>
         </Link>
         <div className="d-flex align-items-center gap-1 flex-wrap">
