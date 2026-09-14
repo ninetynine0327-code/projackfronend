@@ -45,7 +45,7 @@ const Register = () => {
                 <input className="dc-input" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
               </div>
               <div className="mb-3">
-                <label className="dc-label">เบอร์โทรศัพท์ (Username)</label>
+                <label className="dc-label">เบอร์โทรศัพท์</label>
                 <input type="tel" className="dc-input" value={phone} onChange={(e) => setPhone(e.target.value)} required />
               </div>
               <div className="mb-4">
