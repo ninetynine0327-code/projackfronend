@@ -15,6 +15,11 @@ const Register = () => {
     e.preventDefault();
     setError(''); setSuccess('');
 
+    if (!/^\d{10}$/.test(phone)) {
+      setError('กรุณากรอกเบอร์โทรศัพท์ให้ครบ 10 ตัวเลข');
+      return;
+    }
+
     try {
       const res = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
@@ -46,7 +51,17 @@ const Register = () => {
               </div>
               <div className="mb-3">
                 <label className="dc-label">เบอร์โทรศัพท์</label>
-                <input type="tel" className="dc-input" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+                <input
+                  type="tel"
+                  className="dc-input"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                  inputMode="numeric"
+                  maxLength={10}
+                  pattern="[0-9]{10}"
+                  title="กรุณากรอกเบอร์โทรศัพท์ 10 ตัวเลข"
+                  required
+                />
               </div>
               <div className="mb-4">
                 <label className="dc-label">รหัสผ่าน</label>
